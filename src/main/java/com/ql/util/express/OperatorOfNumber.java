@@ -2,7 +2,9 @@ package com.ql.util.express;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.logging.Logger;
 
+import com.ql.util.express.config.QLExpressRunStrategy;
 import com.ql.util.express.exception.QLException;
 
 /**
@@ -105,22 +107,22 @@ public class OperatorOfNumber {
             }
         } else {
             if (type.equals(byte.class) || type.equals(Byte.class)) {
-                if (((BigDecimal)value).scale() > 0) {
+                if (((BigDecimal) value).scale() > 0) {
                     throw new RuntimeException("有小数位，不能转化为：" + type.getName());
                 }
                 return value.byteValue();
             } else if (type.equals(short.class) || type.equals(Short.class)) {
-                if (((BigDecimal)value).scale() > 0) {
+                if (((BigDecimal) value).scale() > 0) {
                     throw new RuntimeException("有小数位，不能转化为：" + type.getName());
                 }
                 return value.shortValue();
             } else if (type.equals(int.class) || type.equals(Integer.class)) {
-                if (((BigDecimal)value).scale() > 0) {
+                if (((BigDecimal) value).scale() > 0) {
                     throw new RuntimeException("有小数位，不能转化为：" + type.getName());
                 }
                 return value.intValue();
             } else if (type.equals(long.class) || type.equals(Long.class)) {
-                if (((BigDecimal)value).scale() > 0) {
+                if (((BigDecimal) value).scale() > 0) {
                     throw new RuntimeException("有小数位，不能转化为：" + type.getName());
                 }
                 return value.longValue();
@@ -177,48 +179,96 @@ public class OperatorOfNumber {
     }
 
     public static Object add(Object op1, Object op2, boolean isPrecise) throws Exception {
-        if (op1 == null) {
+        if (op1 == null && !QLExpressRunStrategy.isNullValueToNumber()) {
             op1 = "null";
+        } else if (op1 == null) {
+            op1 = 0;
+            Logger.getAnonymousLogger().warning("加法操作数1为null");
         }
-        if (op2 == null) {
+        if (op2 == null && !QLExpressRunStrategy.isNullValueToNumber()) {
             op2 = "null";
+        } else if (op2 == null) {
+            op2 = 0;
+            Logger.getAnonymousLogger().warning("加法操作数2为null");
         }
         if (op1 instanceof String || op2 instanceof String) {
             return op1.toString() + op2;
         }
         if (isPrecise) {
-            return PreciseNumberOperator.addPrecise((Number)op1, (Number)op2);
+            return PreciseNumberOperator.addPrecise((Number) op1, (Number) op2);
         } else {
-            return NormalNumberOperator.addNormal((Number)op1, (Number)op2);
+            return NormalNumberOperator.addNormal((Number) op1, (Number) op2);
         }
     }
 
     public static Number subtract(Object op1, Object op2, boolean isPrecise) throws Exception {
+        if (op1 == null && QLExpressRunStrategy.isNullValueToNumber()) {
+            op1 = 0;
+            Logger.getAnonymousLogger().warning("被减数为null");
+        } else if (op1 == null) {
+            throw new NullPointerException();
+        }
+
+        if (op2 == null && QLExpressRunStrategy.isNullValueToNumber()) {
+            op2 = 0;
+            Logger.getAnonymousLogger().warning("减数为null");
+        } else if (op2 == null){
+            throw new NullPointerException();
+        }
+
         if (isPrecise) {
-            return PreciseNumberOperator.subtractPrecise((Number)op1, (Number)op2);
+            return PreciseNumberOperator.subtractPrecise((Number) op1, (Number) op2);
         } else {
-            return NormalNumberOperator.subtractNormal((Number)op1, (Number)op2);
+            return NormalNumberOperator.subtractNormal((Number) op1, (Number) op2);
         }
     }
 
     public static Number multiply(Object op1, Object op2, boolean isPrecise) throws Exception {
+        if (op1 == null && QLExpressRunStrategy.isNullValueToNumber()) {
+            op1 = 1;
+            Logger.getAnonymousLogger().warning("乘法操作数1为null");
+        } else if (op1 == null) {
+            throw new NullPointerException();
+        }
+
+        if (op2 == null && QLExpressRunStrategy.isNullValueToNumber()) {
+            op2 = 1;
+            Logger.getAnonymousLogger().warning("乘法操作数2为null");
+        } else if (op2 == null){
+            throw new NullPointerException();
+        }
+
         if (isPrecise) {
-            return PreciseNumberOperator.multiplyPrecise((Number)op1, (Number)op2);
+            return PreciseNumberOperator.multiplyPrecise((Number) op1, (Number) op2);
         } else {
-            return NormalNumberOperator.multiplyNormal((Number)op1, (Number)op2);
+            return NormalNumberOperator.multiplyNormal((Number) op1, (Number) op2);
         }
     }
 
     public static Number divide(Object op1, Object op2, boolean isPrecise) throws Exception {
+        if (op1 == null && QLExpressRunStrategy.isNullValueToNumber()) {
+            op1 = 0;
+            Logger.getAnonymousLogger().warning("被除数为null");
+        } else if (op1 == null) {
+            throw new NullPointerException();
+        }
+
+        if (op2 == null && QLExpressRunStrategy.isNullValueToNumber()) {
+            op2 = 1;
+            Logger.getAnonymousLogger().warning("除数为null");
+        } else if (op2 == null){
+            throw new NullPointerException();
+        }
+
         if (isPrecise) {
-            return PreciseNumberOperator.dividePrecise((Number)op1, (Number)op2);
+            return PreciseNumberOperator.dividePrecise((Number) op1, (Number) op2);
         } else {
-            return NormalNumberOperator.divideNormal((Number)op1, (Number)op2);
+            return NormalNumberOperator.divideNormal((Number) op1, (Number) op2);
         }
     }
 
     public static Object modulo(Object op1, Object op2) throws Exception {
-        return NormalNumberOperator.moduloNormal((Number)op1, (Number)op2);
+        return NormalNumberOperator.moduloNormal((Number) op1, (Number) op2);
     }
 }
 
@@ -383,13 +433,13 @@ class PreciseNumberOperator {
         BigDecimal result;
         if (op1 instanceof BigDecimal) {
             if (op2 instanceof BigDecimal) {
-                result = ((BigDecimal)op1).add((BigDecimal)op2);
+                result = ((BigDecimal) op1).add((BigDecimal) op2);
             } else {
-                result = ((BigDecimal)op1).add(new BigDecimal(op2.toString()));
+                result = ((BigDecimal) op1).add(new BigDecimal(op2.toString()));
             }
         } else {
             if (op2 instanceof BigDecimal) {
-                result = new BigDecimal(op1.toString()).add((BigDecimal)op2);
+                result = new BigDecimal(op1.toString()).add((BigDecimal) op2);
             } else {
                 result = new BigDecimal(op1.toString()).add(new BigDecimal(op2.toString()));
             }
@@ -401,13 +451,13 @@ class PreciseNumberOperator {
         BigDecimal result;
         if (op1 instanceof BigDecimal) {
             if (op2 instanceof BigDecimal) {
-                result = ((BigDecimal)op1).subtract((BigDecimal)op2);
+                result = ((BigDecimal) op1).subtract((BigDecimal) op2);
             } else {
-                result = ((BigDecimal)op1).subtract(new BigDecimal(op2.toString()));
+                result = ((BigDecimal) op1).subtract(new BigDecimal(op2.toString()));
             }
         } else {
             if (op2 instanceof BigDecimal) {
-                result = new BigDecimal(op1.toString()).subtract((BigDecimal)op2);
+                result = new BigDecimal(op1.toString()).subtract((BigDecimal) op2);
             } else {
                 result = new BigDecimal(op1.toString()).subtract(new BigDecimal(op2.toString()));
             }
@@ -419,13 +469,13 @@ class PreciseNumberOperator {
         BigDecimal result;
         if (op1 instanceof BigDecimal) {
             if (op2 instanceof BigDecimal) {
-                result = ((BigDecimal)op1).multiply((BigDecimal)op2);
+                result = ((BigDecimal) op1).multiply((BigDecimal) op2);
             } else {
-                result = ((BigDecimal)op1).multiply(new BigDecimal(op2.toString()));
+                result = ((BigDecimal) op1).multiply(new BigDecimal(op2.toString()));
             }
         } else {
             if (op2 instanceof BigDecimal) {
-                result = new BigDecimal(op1.toString()).multiply((BigDecimal)op2);
+                result = new BigDecimal(op1.toString()).multiply((BigDecimal) op2);
             } else {
                 result = new BigDecimal(op1.toString()).multiply(new BigDecimal(op2.toString()));
             }
@@ -437,18 +487,18 @@ class PreciseNumberOperator {
         BigDecimal result;
         if (op1 instanceof BigDecimal) {
             if (op2 instanceof BigDecimal) {
-                result = ((BigDecimal)op1).divide((BigDecimal)op2, DIVIDE_PRECISION, RoundingMode.HALF_UP);
+                result = ((BigDecimal) op1).divide((BigDecimal) op2, DIVIDE_PRECISION, RoundingMode.HALF_UP);
             } else {
-                result = ((BigDecimal)op1).divide(new BigDecimal(op2.toString()), DIVIDE_PRECISION,
-                    RoundingMode.HALF_UP);
+                result = ((BigDecimal) op1).divide(new BigDecimal(op2.toString()), DIVIDE_PRECISION,
+                        RoundingMode.HALF_UP);
             }
         } else {
             if (op2 instanceof BigDecimal) {
-                result = new BigDecimal(op1.toString()).divide((BigDecimal)op2, DIVIDE_PRECISION,
-                    RoundingMode.HALF_UP);
+                result = new BigDecimal(op1.toString()).divide((BigDecimal) op2, DIVIDE_PRECISION,
+                        RoundingMode.HALF_UP);
             } else {
                 result = new BigDecimal(op1.toString()).divide(new BigDecimal(op2.toString()), DIVIDE_PRECISION,
-                    RoundingMode.HALF_UP);
+                        RoundingMode.HALF_UP);
             }
         }
         return basicNumberFormatTransfer(result);
@@ -456,16 +506,17 @@ class PreciseNumberOperator {
 
     /**
      * 格式转化通用
+     *
      * @param number
      * @return
      */
-    protected static Number basicNumberFormatTransfer(BigDecimal number){
+    protected static Number basicNumberFormatTransfer(BigDecimal number) {
         if (number.scale() == 0) {
-            if(number.compareTo(OperatorOfNumber.BIG_DECIMAL_INTEGER_MAX) < OperatorOfNumber.MORE
-                        && number.compareTo(OperatorOfNumber.BIG_DECIMAL_INTEGER_MIN) > OperatorOfNumber.LESS){
+            if (number.compareTo(OperatorOfNumber.BIG_DECIMAL_INTEGER_MAX) < OperatorOfNumber.MORE
+                    && number.compareTo(OperatorOfNumber.BIG_DECIMAL_INTEGER_MIN) > OperatorOfNumber.LESS) {
                 return number.intValue();
-            }else if(number.compareTo(OperatorOfNumber.BIG_DECIMAL_LONG_MAX) < OperatorOfNumber.MORE
-                            && number.compareTo(OperatorOfNumber.BIG_DECIMAL_LONG_MIN) > OperatorOfNumber.LESS){
+            } else if (number.compareTo(OperatorOfNumber.BIG_DECIMAL_LONG_MAX) < OperatorOfNumber.MORE
+                    && number.compareTo(OperatorOfNumber.BIG_DECIMAL_LONG_MIN) > OperatorOfNumber.LESS) {
                 return number.longValue();
             }
         }

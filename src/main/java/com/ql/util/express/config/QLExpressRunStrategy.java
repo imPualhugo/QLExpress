@@ -29,6 +29,11 @@ public class QLExpressRunStrategy {
     private static boolean avoidNullPointer = false;
 
     /**
+     * 空值数值化 例如除了除法和乘法运算外置为0，除法和乘法运算默认为1
+     */
+    private static boolean nullValueToNumber = false;
+
+    /**
      * 当空对象进行大小比较时，返回false, 例如 1 > null 和 null > 1都返回false
      */
     private static boolean compareNullLessMoreAsFalse = false;
@@ -114,6 +119,14 @@ public class QLExpressRunStrategy {
 
     public static void setAvoidNullPointer(boolean avoidNullPointer) {
         QLExpressRunStrategy.avoidNullPointer = avoidNullPointer;
+    }
+
+    public static boolean isNullValueToNumber() {
+        return nullValueToNumber;
+    }
+
+    public static void setNullValueToNumber(boolean nullValueToNumber) {
+        QLExpressRunStrategy.nullValueToNumber = nullValueToNumber;
     }
 
     public static ClassLoader getCustomClassLoader() {
